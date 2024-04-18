@@ -153,7 +153,7 @@ def find_all_tv_list(source_url=None):
     # 创建驱动
     driver = webdriver.Chrome(options=chrome_options)
     # 设置超时时间为10秒
-    driver.set_page_load_timeout(10)
+    # driver.set_page_load_timeout(10)
     # 定义IP列表
     ip_port_set = set()
     # 设置匹配IP和端口号的正则
@@ -169,6 +169,7 @@ def find_all_tv_list(source_url=None):
             # 获取网页内容
             time.sleep(10)
             page_content = driver.page_source
+            print(f"获取：{web_url},的查询结果")
             # FIXME:测试本地数据,减少页面访问次数
             # page_content = file_content
             # 查找符合条件：IP:PORT的数据
@@ -183,6 +184,7 @@ def find_all_tv_list(source_url=None):
     # 多线程获取可用url
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         futures = []
+        print(f"查询的IP:{ip_port_set}")
         for ip_port in ip_port_set:
             ip_port = ip_port.strip()
             modified_urls = modify_urls(ip_port)
@@ -209,6 +211,7 @@ def find_all_tv_list(source_url=None):
                         for key, value in rule.items():
                             name = name.replace(key, value)
                         name = re.sub(r"CCTV(\d+)台", r"CCTV\1", name)
+                        print(f"节目:{name},地址：{urld}")
                         task_queue.put({"name": name, "url": urld})
     # 创建线程组，获取执行状态数据
     create_work_threads(task_queue)
@@ -325,7 +328,7 @@ def channel_key(channel_name):
 
 
 # 创建work线程
-def create_work_threads(task_queue, num_threads=10):
+def create_work_threads(task_queue, num_threads=20):
     for _ in range(min(num_threads, task_queue.qsize())):
         t = threading.Thread(target=worker, args=(task_queue,), daemon=True)  # 将工作线程设置为守护线程
         t.start()
@@ -384,7 +387,7 @@ def process_valid_channel(channel_name, channel_url, lines):
     end_time = time.time()
     response_time = end_time - start_time
     normalized_speed = file_size / response_time / 1024 / 1024  # 将速率从B/s转换为MB/s
-    if normalized_speed >= 0.5:
+    if normalized_speed >= 1:
         result = channel_name, channel_url, f"{normalized_speed:.3f} MB/s"
         results.append(result)
         print_summary()
